@@ -38,19 +38,26 @@ class NeuralNetwork:
     def backward_propagation(self, x, y):
         pass
 
+    def sigmoid(self, z):
+        return 1 / (1 + np.exp(-z))
+    
     def cost(self, x, y):
+        # TODO: add regularization
+        m = x.shape[0]
+        j = 0
+        for i in range(m):
+            self.forward_propagation(x[i])
+            j -= 1 / m * (y[i].dot(np.log(self.layers[-1])) + (1 - y[i]).dot(np.log(1 - self.layers[-1]))).sum()
+        return j
+
+    def gradient_check(self, x, y):
         pass
 
     def train(self, x, y):
         pass
 
-    def gradient_check(self):
-        pass
-
     def predict(self, x):
         pass
 
-    def sigmoid(self, z):
-        return 1 / (1 + np.exp(-z))
-
-n = NeuralNetwork(6)
+n = NeuralNetwork(1)
+print(n.cost(np.array([[2], [3], [4]]), np.array([[0,1], [1,0], [0,1]])))
