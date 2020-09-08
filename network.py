@@ -36,7 +36,20 @@ class NeuralNetwork:
 
 
     def backward_propagation(self, x, y):
-        pass
+        Delta = [np.zeros((weight.shape)) for weight in self.weights]
+        m = x.shape[0]
+        # TODO: rewrite this algorithm without the outer loop
+        for i in range(m):
+            self.forward_propagation(x[i])
+            delta = self.layers[-1] - y[i]
+            for l in range(len(self.layers) - 2, -1, -1):
+                biased = np.insert(self.layers[l], 0, 1)
+                Delta[l] += delta.reshape((delta.shape[0], 1)) @ biased.reshape((1, biased.shape[0]))
+                delta = (self.weights[l].T @ delta)[1:,] * (self.layers[l] * (1 - self.layers[l]))
+
+        Delta = [1 / m * D for D in Delta]
+        return Delta
+
 
     def sigmoid(self, z):
         return 1 / (1 + np.exp(-z))
@@ -73,8 +86,14 @@ class NeuralNetwork:
     def predict(self, x):
         pass
 
-n = NeuralNetwork(2, hidden_size=2)
-x = np.array([[2, 3], [3, 4], [4, 5]])
-y = np.array([[0,1], [1,0], [0,1]])
+n = NeuralNetwork(3, hidden_layers=3, hidden_size=5, classes=3)
+x = np.array([[2, 1, 4], [3, 2, 6], [4, 7, 6]])
+y = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
 print(n.cost(x, y))
-print(*n.gradient_check(x, y), sep='\n')
+check = n.gradient_check(x, y) 
+actual = n.backward_propagation(x, y)
+error = sum([abs(check[i] - actual[i]).sum() for i in range(len(check))])
+if error < 1e-6:
+    print("Correct")
+else:
+    print("Value is off")
