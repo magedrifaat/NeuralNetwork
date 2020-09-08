@@ -51,7 +51,21 @@ class NeuralNetwork:
         return j
 
     def gradient_check(self, x, y):
-        pass
+        delta = []
+        epsilon = 1e-4
+        for weight in self.weights:
+            layer_delta = np.zeros(weight.shape)
+            for i in range(weight.shape[0]):
+                for j in range(weight.shape[1]):
+                    weight[i, j] = weight[i, j] + epsilon
+                    cost_after = self.cost(x, y)
+                    weight[i, j] = weight[i, j] - 2 * epsilon
+                    cost_before = self.cost(x, y)
+                    weight[i, j] = weight[i, j] + epsilon
+                    partial = (cost_after - cost_before) / (2 * epsilon)
+                    layer_delta[i, j] = partial
+            delta.append(layer_delta)
+        return delta
 
     def train(self, x, y):
         pass
@@ -59,5 +73,8 @@ class NeuralNetwork:
     def predict(self, x):
         pass
 
-n = NeuralNetwork(1)
-print(n.cost(np.array([[2], [3], [4]]), np.array([[0,1], [1,0], [0,1]])))
+n = NeuralNetwork(2, hidden_size=2)
+x = np.array([[2, 3], [3, 4], [4, 5]])
+y = np.array([[0,1], [1,0], [0,1]])
+print(n.cost(x, y))
+print(*n.gradient_check(x, y), sep='\n')
