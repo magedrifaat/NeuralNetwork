@@ -1,11 +1,19 @@
 import numpy as np
 
 class NeuralNetwork:
-    def __init__(self, n, hidden_layers=1, hidden_size=10, classes=2):
+    EPSILON = 1e-6
+    ALPHA = 0.5
+    def __init__(self, n, alpha=ALPHA, epsilon=EPSILON, hidden_layers=1, 
+                 hidden_size=10, classes=2):
         self.n = n
         self.hidden_layers = hidden_layers
         self.hidden_size = hidden_size
         self.classes = classes
+
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.mean = 0
+        self.range = 1
 
         first_layer_weights = np.random.random_sample((hidden_size, n+1)) * 2 - 1
         last_layer_weights = np.random.random_sample((classes, hidden_size+1)) * 2 - 1
@@ -22,7 +30,11 @@ class NeuralNetwork:
             self.layers.append(layer)
         last_layer = np.zeros((classes,))
         self.layers.append(last_layer)
-        
+    
+    def normalize(self, x):
+        self.mean = x.mean(axis=0)
+        self.range = x.max(axis=0) - x.min(axis=0)
+        return (x - self.mean) / self.range
 
     def forward_propagation(self, x):
         a = x
@@ -33,7 +45,6 @@ class NeuralNetwork:
             a = np.insert(a, 0, 1)
             a = self.sigmoid(weight @ a)
         self.layers[-1]  = a.copy()
-
 
     def backward_propagation(self, x, y):
         Delta = [np.zeros((weight.shape)) for weight in self.weights]
@@ -49,7 +60,6 @@ class NeuralNetwork:
 
         Delta = [1 / m * D for D in Delta]
         return Delta
-
 
     def sigmoid(self, z):
         return 1 / (1 + np.exp(-z))
@@ -81,15 +91,26 @@ class NeuralNetwork:
         return delta
 
     def train(self, x, y):
-        pass
+        x = self.normalize(x)
+        last_cost = 0
+        while True:
+            new_cost = self.cost(x, y)
+            if abs(new_cost - last_cost) < self.epsilon:
+                break
+            last_cost = new_cost
+
+            derivatives = self.backward_propagation(x, y)
+            for i, derivative in enumerate(derivatives):
+                self.weights[i] -= self.alpha * derivative
 
     def predict(self, x):
-        pass
+        self.forward_propagation((x - self.mean) / self.range)
+        return self.layers[-1]
+
 
 n = NeuralNetwork(3, hidden_layers=3, hidden_size=5, classes=3)
 x = np.array([[2, 1, 4], [3, 2, 6], [4, 7, 6]])
 y = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
-print(n.cost(x, y))
 check = n.gradient_check(x, y) 
 actual = n.backward_propagation(x, y)
 error = sum([abs(check[i] - actual[i]).sum() for i in range(len(check))])
@@ -97,3 +118,7 @@ if error < 1e-6:
     print("Correct")
 else:
     print("Value is off")
+n.train(x, y)
+print(n.predict(np.array([2, 1, 4])))
+print(n.predict(np.array([3, 2, 6])))
+print(n.predict(np.array([4, 7, 6])))
