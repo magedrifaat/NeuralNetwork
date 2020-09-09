@@ -3,8 +3,9 @@ import numpy as np
 class NeuralNetwork:
     EPSILON = 1e-6
     ALPHA = 0.5
-    def __init__(self, n, alpha=ALPHA, epsilon=EPSILON, hidden_layers=1, 
-                 hidden_size=10, classes=2):
+    LAMBDA = 0.001
+    def __init__(self, n, alpha=ALPHA, epsilon=EPSILON, _lambda=LAMBDA,
+                 hidden_layers=1, hidden_size=10, classes=2):
         self.n = n
         self.hidden_layers = hidden_layers
         self.hidden_size = hidden_size
@@ -12,6 +13,7 @@ class NeuralNetwork:
 
         self.alpha = alpha
         self.epsilon = epsilon
+        self._lambda = _lambda
         self.mean = 0
         self.range = 1
 
@@ -58,19 +60,25 @@ class NeuralNetwork:
                 Delta[l] += delta.reshape((delta.shape[0], 1)) @ biased.reshape((1, biased.shape[0]))
                 delta = (self.weights[l].T @ delta)[1:,] * (self.layers[l] * (1 - self.layers[l]))
 
-        Delta = [1 / m * D for D in Delta]
-        return Delta
+        derivatives = []
+        for i, d in enumerate(Delta):
+            derivative = 1 / m * d
+            lambdas = np.array([0] + [self._lambda] * (derivative.shape[1] - 1))
+            derivative += lambdas * self.weights[i]
+            derivatives.append(derivative)
+        return derivatives
 
     def sigmoid(self, z):
         return 1 / (1 + np.exp(-z))
     
     def cost(self, x, y):
-        # TODO: add regularization
+        # DONE: add regularization
         m = x.shape[0]
         j = 0
         for i in range(m):
             self.forward_propagation(x[i])
             j -= 1 / m * (y[i].dot(np.log(self.layers[-1])) + (1 - y[i]).dot(np.log(1 - self.layers[-1]))).sum()
+            j += self._lambda / (2 * m) * sum([(weight[:,1:] ** 2).sum() for weight in self.weights])
         return j
 
     def gradient_check(self, x, y):
@@ -108,7 +116,7 @@ class NeuralNetwork:
         return self.layers[-1]
 
 
-n = NeuralNetwork(3, hidden_layers=3, hidden_size=5, classes=3)
+n = NeuralNetwork(3, hidden_layers=3, hidden_size=10, classes=3)
 x = np.array([[2, 1, 4], [3, 2, 6], [4, 7, 6]])
 y = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
 check = n.gradient_check(x, y) 
