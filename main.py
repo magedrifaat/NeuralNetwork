@@ -14,11 +14,10 @@ def main():
     x = data.iloc[:, :4].values
     y = np.array([mapping[d] for d in data['label'].values])
 
-    # TODO: split train data to speed up learning
-    train_x, train_y, test_x, test_y = split_data(x, y, ratio=0.7)
-    nn = NeuralNetwork(x.shape[1], classes=y.shape[1], hidden_layers=2, hidden_size=6)
+    train_x, train_y, test_x, test_y = split_data(x, y, ratio=0.3)
+    nn = NeuralNetwork(x.shape[1], classes=y.shape[1], hidden_layers=3, hidden_size=6)
     nn.train(train_x, train_y)
-    predictions = [nn.predict(a) for a in test_x]
+    predictions = nn.predict(test_x)
     predictions = np.array([mapping[classes[val]] for val in np.argmax(predictions, axis=1)])
     print((predictions != test_y).sum())
 

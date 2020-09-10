@@ -44,27 +44,26 @@ class NeuralNetwork:
         for i, weight in enumerate(self.weights):
             self.layers[i] = a.copy()
             # Add bias
-            a = np.insert(a, 0, 1)
-            a = self.sigmoid(weight @ a)
+            a = np.insert(a, 0, 1, axis=1)
+            a = self.sigmoid(a @ weight.T)
         self.layers[-1]  = a.copy()
 
     def backward_propagation(self, x, y):
         Delta = [np.zeros((weight.shape)) for weight in self.weights]
         m = x.shape[0]
-        # TODO: rewrite this algorithm without the outer loop
-        for i in range(m):
-            self.forward_propagation(x[i])
-            delta = self.layers[-1] - y[i]
-            for l in range(len(self.layers) - 2, -1, -1):
-                biased = np.insert(self.layers[l], 0, 1)
-                Delta[l] += delta.reshape((delta.shape[0], 1)) @ biased.reshape((1, biased.shape[0]))
-                delta = (self.weights[l].T @ delta)[1:,] * (self.layers[l] * (1 - self.layers[l]))
+        # DONE: rewrite this algorithm without the outer loop
+        self.forward_propagation(x)
+        delta = self.layers[-1] - y
+        for l in range(len(self.layers) - 2, -1, -1):
+            biased = np.insert(self.layers[l], 0, 1, axis=1)
+            Delta[l] += delta.T @ biased
+            delta = (delta @ self.weights[l])[:,1:] * (self.layers[l] * (1 - self.layers[l]))
 
         derivatives = []
         for i, d in enumerate(Delta):
             derivative = 1 / m * d
             lambdas = np.array([0] + [self._lambda] * (derivative.shape[1] - 1))
-            derivative += lambdas * self.weights[i]
+            #derivative += lambdas * self.weights[i]
             derivatives.append(derivative)
         return derivatives
 
@@ -74,11 +73,9 @@ class NeuralNetwork:
     def cost(self, x, y):
         # DONE: add regularization
         m = x.shape[0]
-        j = 0
-        for i in range(m):
-            self.forward_propagation(x[i])
-            j -= 1 / m * (y[i].dot(np.log(self.layers[-1])) + (1 - y[i]).dot(np.log(1 - self.layers[-1]))).sum()
-            j += self._lambda / (2 * m) * sum([(weight[:,1:] ** 2).sum() for weight in self.weights])
+        self.forward_propagation(x)
+        j = -1 / m * ( (y * np.log(self.layers[-1])).sum() + ((1 - y) * np.log(1 - self.layers[-1])).sum())
+        #j += self._lambda / (2 * m) * sum([(weight[:,1:] ** 2).sum() for weight in self.weights])
         return j
 
     def gradient_check(self, x, y):
@@ -115,18 +112,20 @@ class NeuralNetwork:
         self.forward_propagation((x - self.mean) / self.range)
         return self.layers[-1]
 
-
-# n = NeuralNetwork(3, hidden_layers=3, hidden_size=10, classes=3)
-# x = np.array([[2, 1, 4], [3, 2, 6], [4, 7, 6]])
-# y = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
-# check = n.gradient_check(x, y) 
-# actual = n.backward_propagation(x, y)
-# error = sum([abs(check[i] - actual[i]).sum() for i in range(len(check))])
-# if error < 1e-6:
-#     print("Correct")
-# else:
-#     print("Value is off")
-# n.train(x, y)
-# print(n.predict(np.array([2, 1, 4])))
-# print(n.predict(np.array([3, 2, 6])))
-# print(n.predict(np.array([4, 7, 6])))
+if __name__ == "__main__":
+    n = NeuralNetwork(3, hidden_layers=2, hidden_size=7, classes=2)
+    x = np.array([[2, 4, 6], [3, 5, 7], [8, 4, 2], [8, 7, 6]])
+    y = np.array([[0, 1], [1, 0], [0, 1], [0, 1]])
+    check = n.gradient_check(x, y)
+    actual = n.backward_propagation(x, y)
+    print(*check, sep='\n')
+    print(*actual, sep='\n')
+    error = sum([abs(check[i] - actual[i]).sum() for i in range(len(check))])
+    if error < 1e-6:
+        print("Correct")
+    else:
+        print("Value is off")
+    # n.train(x, y)
+    # print(n.predict(np.array([2, 1, 4])))
+    # print(n.predict(np.array([3, 2, 6])))
+    # print(n.predict(np.array([4, 7, 6])))
