@@ -2,7 +2,7 @@ import numpy as np
 
 class NeuralNetwork:
     EPSILON = 1e-6
-    ALPHA = 0.5
+    ALPHA = 1
     LAMBDA = 0.001
     def __init__(self, n, alpha=ALPHA, epsilon=EPSILON, _lambda=LAMBDA,
                  hidden_layers=1, hidden_size=10, classes=2):
@@ -116,17 +116,17 @@ class NeuralNetwork:
         return self.layers[-1]
 
 
-n = NeuralNetwork(3, hidden_layers=3, hidden_size=10, classes=3)
-x = np.array([[2, 1, 4], [3, 2, 6], [4, 7, 6]])
-y = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
-check = n.gradient_check(x, y) 
-actual = n.backward_propagation(x, y)
-error = sum([abs(check[i] - actual[i]).sum() for i in range(len(check))])
-if error < 1e-6:
-    print("Correct")
-else:
-    print("Value is off")
-n.train(x, y)
-print(n.predict(np.array([2, 1, 4])))
-print(n.predict(np.array([3, 2, 6])))
-print(n.predict(np.array([4, 7, 6])))
+# n = NeuralNetwork(3, hidden_layers=3, hidden_size=10, classes=3)
+# x = np.array([[2, 1, 4], [3, 2, 6], [4, 7, 6]])
+# y = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+# check = n.gradient_check(x, y) 
+# actual = n.backward_propagation(x, y)
+# error = sum([abs(check[i] - actual[i]).sum() for i in range(len(check))])
+# if error < 1e-6:
+#     print("Correct")
+# else:
+#     print("Value is off")
+# n.train(x, y)
+# print(n.predict(np.array([2, 1, 4])))
+# print(n.predict(np.array([3, 2, 6])))
+# print(n.predict(np.array([4, 7, 6])))
