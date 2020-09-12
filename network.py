@@ -40,7 +40,7 @@ class NeuralNetwork:
 
     def forward_propagation(self, x):
         a = x
-        # repeat for each layer
+        # Repeat for each layer
         for i, weight in enumerate(self.weights):
             self.layers[i] = a.copy()
             # Add bias
@@ -51,7 +51,7 @@ class NeuralNetwork:
     def backward_propagation(self, x, y):
         Delta = [np.zeros((weight.shape)) for weight in self.weights]
         m = x.shape[0]
-        # DONE: rewrite this algorithm without the outer loop
+        
         self.forward_propagation(x)
         delta = self.layers[-1] - y
         for l in range(len(self.layers) - 2, -1, -1):
@@ -63,7 +63,7 @@ class NeuralNetwork:
         for i, d in enumerate(Delta):
             derivative = 1 / m * d
             lambdas = np.array([0] + [self._lambda] * (derivative.shape[1] - 1))
-            #derivative += lambdas * self.weights[i]
+            derivative += lambdas / m * self.weights[i]
             derivatives.append(derivative)
         return derivatives
 
@@ -71,11 +71,10 @@ class NeuralNetwork:
         return 1 / (1 + np.exp(-z))
     
     def cost(self, x, y):
-        # DONE: add regularization
         m = x.shape[0]
         self.forward_propagation(x)
-        j = -1 / m * ( (y * np.log(self.layers[-1])).sum() + ((1 - y) * np.log(1 - self.layers[-1])).sum())
-        #j += self._lambda / (2 * m) * sum([(weight[:,1:] ** 2).sum() for weight in self.weights])
+        j = -1 / m * ((y * np.log(self.layers[-1])).sum() + ((1 - y) * np.log(1 - self.layers[-1])).sum())
+        j += self._lambda / (2 * m) * sum([(weight[:, 1:] ** 2).sum() for weight in self.weights])
         return j
 
     def gradient_check(self, x, y):
@@ -113,13 +112,19 @@ class NeuralNetwork:
         return self.layers[-1]
 
 if __name__ == "__main__":
-    n = NeuralNetwork(3, hidden_layers=2, hidden_size=7, classes=2)
-    x = np.array([[2, 4, 6], [3, 5, 7], [8, 4, 2], [8, 7, 6]])
-    y = np.array([[0, 1], [1, 0], [0, 1], [0, 1]])
+    # np.random.seed(1)
+    n = NeuralNetwork(3, hidden_layers=5, hidden_size=10, classes=4)
+    # print("weights:")
+    # print(*n.weights, sep="\n")
+    # print()
+    x = np.array([[2, 3 , 4], [1, 5, 2], [5, 6, 3], [4, 7, 8]])
+    y = np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    # print(f"cost {n.cost(x, y)}")
+
     check = n.gradient_check(x, y)
     actual = n.backward_propagation(x, y)
-    print(*check, sep='\n')
-    print(*actual, sep='\n')
+    # print(*check, sep='\n')
+    # print(*actual, sep='\n')
     error = sum([abs(check[i] - actual[i]).sum() for i in range(len(check))])
     if error < 1e-6:
         print("Correct")
